@@ -22,6 +22,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+<<<<<<< HEAD
       # 3. Docker 이미지 빌드 및 푸시 (커밋 SHA를 태그로 사용)
       - name: Build and Push
         run: |
@@ -35,6 +36,21 @@ jobs:
           sed -i "s|image: worldvit/flask-app:.*|image: worldvit/flask-app:${{ github.sha }}|g" deployment.yaml
           
           # Git 설정 및 변경사항 커밋
+=======
+      # 3. Docker 이미지 빌드 및 푸시 (고유한 github.sha 사용)
+      - name: Build and Push
+        run: |
+          docker build -t dwjung90/flask-app:${{ github.sha }} .
+          docker push dwjung90/flask-app:${{ github.sha }}
+
+      # 4. 배포 매니페스트(deployment.yaml) 이미지 태그 자동 업데이트
+      - name: Update Manifest and Push
+        run: |
+          # deployment.yaml 내의 이미지 경로를 새 SHA 태그로 변경
+          sed -i "s|image: dwjung90/flask-app:.*|image: dwjung90/flask-app:${{ github.sha }}|g" deployment.yaml
+          
+          # 변경사항 커밋 및 푸시 (CI 무한 루프 방지를 위해 [skip ci] 포함)
+>>>>>>> ebcc8b9 (add multi fiels)
           git config --global user.email "bot@github.com"
           git config --global user.name "github-actions[bot]"
           git add deployment.yaml
