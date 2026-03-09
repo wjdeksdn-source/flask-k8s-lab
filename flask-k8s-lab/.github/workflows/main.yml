@@ -1,0 +1,42 @@
+name: Flask-App GitOps Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. 소스 코드 체크아웃
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2. Docker Hub 로그인
+      - name: Docker Login
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 3. Docker 이미지 빌드 및 푸시 (고유한 github.sha 사용)
+      - name: Build and Push
+        run: |
+          docker build -t dwjung90/flask-app:${{ github.sha }} .
+          docker push dwjung90/flask-app:${{ github.sha }}
+
+      # 4. 배포 매니페스트(deployment.yaml) 이미지 태그 자동 업데이트
+      - name: Update Manifest and Push
+        run: |
+          # deployment.yaml 내의 이미지 경로를 새 SHA 태그로 변경
+          sed -i "s|image: dwjung90/flask-app:.*|image: dwjung90/flask-app:${{ github.sha }}|g" deployment.yaml
+          
+          # 변경사항 커밋 및 푸시 (CI 무한 루프 방지를 위해 [skip ci] 포함)
+          git config --global user.email "bot@github.com"
+          git config --global user.name "github-actions[bot]"
+          git add deployment.yaml
+          git commit -m "chore: update image tag to ${{ github.sha }} [skip ci]"
+          git push
